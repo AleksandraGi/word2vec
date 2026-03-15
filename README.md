@@ -38,5 +38,34 @@ The program:
 ## Output
 During training, the program prints the average loss for each epoch. After training, it prints nearest neighbors for a few example words as a simple qualitative check of the learned embeddings.
 
+The program prints the average loss per epoch, for example:
+Epoch 1: loss = 2.7725
+Epoch 2: loss = 2.7724
+Epoch 3: loss = 2.7722
+Epoch 4: loss = 2.7718
+Epoch 5: loss = 2.7711
+
+This value is the mean training loss over all positive pairs processed in a given epoch. In general, a decreasing loss suggests that the model is learning to:
+- increase the scores of real (center, context) pairs
+- decrease the scores of negative samples
+
+After training, the program prints nearest neighbors for a few example words, for example:
+Nearest neighbors for 'cat':
+  the          0.5550
+  rules        0.5313
+  on           0.4863
+  animals      0.3507
+  dog          0.3231
+
+The exact output will depend on:
+- the training text
+- vocabulary size
+- parameters
+- random initialization
+- sampled negatives during training
+
+Because this is a small educational implementation, the nearest neighbors may not always look perfect, especially on a very small corpus. Still, they provide a useful sanity check that the embeddings are learning some structure from the data.
+
+
 ## Next Steps
 Future work will include comparing this method with implementations built using PyTorch and TensorFlow.
