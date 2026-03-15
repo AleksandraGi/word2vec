@@ -17,7 +17,7 @@ The model learns two embedding matrices:
 
 ## What the code does
 The program:
-1. reads a text corpus from `sample_corpus.txt`
+1. reads a text from `sample_text.txt`
 2. tokenizes the text
 3. builds a vocabulary and maps words to integer ids
 4. generates skip-gram training pairs
