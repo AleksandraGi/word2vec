@@ -27,7 +27,9 @@ The program:
 8. prints nearest neighbors for a few example words after training
 
 ## Files
-- `word2vec_numpy.py` - full implementation
+- `main.py` - training loop and program entry point
+- `preprocess.py` - text preprocessing, vocabulary building, pair generation, and negative sampling utilities
+- `model.py` - the Word2Vec model, training step, and nearest-neighbor functions
 - `sample_text.txt` - training text
 - `sample_text2.txt` - second training text
 - `README.md` - project description
@@ -36,3 +38,5 @@ The program:
 ## Output
 During training, the program prints the average loss for each epoch. After training, it prints nearest neighbors for a few example words as a simple qualitative check of the learned embeddings.
 
+## Next Steps
+Future work will include comparing this method with implementations built using PyTorch and TensorFlow.
