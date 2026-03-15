@@ -51,11 +51,11 @@ This value is the mean training loss over all positive pairs processed in a give
 
 After training, the program prints nearest neighbors for a few example words, for example:
 Nearest neighbors for 'cat':
-  the          0.5550
-  rules        0.5313
-  on           0.4863
-  animals      0.3507
-  dog          0.3231
+the          0.5550
+rules        0.5313
+on           0.4863
+animals      0.3507
+dog          0.3231
 
 The exact output will depend on:
 - the training text
