@@ -69,87 +69,117 @@ def sample_negatives(probs, num_negatives, forbidden):
 
 class Word2Vec:
     def __init__(self, vocab_size, embedding_dim, seed=42):
+        # random number generator
         rng = np.random.default_rng(seed)
+        # matrix of central words and matrix of context and negative words
         self.W_in = 0.01 * rng.standard_normal((vocab_size, embedding_dim))
         self.W_out = 0.01 * rng.standard_normal((vocab_size, embedding_dim))
 
     def sigmoid(self, x):
+        # transform score to range (0 - 1)
         x = np.clip(x, -10, 10)
+        # sigmoid equation
         return 1.0 / (1.0 + np.exp(-x))
 
-    def train_step(self, center_id, pos_id, neg_ids, lr):
+    def train_step(self, center_id, pos_id, neg_ids, learning_rate):
+        # embedding of a central word 
         v = self.W_in[center_id].copy()
+        # embedding of a context word 
         u_pos = self.W_out[pos_id].copy()
+        # embeddings of a negative words
         u_neg = self.W_out[neg_ids].copy()
 
+        # scores for positive ang negative words
         pos_score = np.dot(u_pos, v)
         neg_scores = u_neg @ v
 
         pos_sig = self.sigmoid(pos_score)
         neg_sig = self.sigmoid(neg_scores)
 
+        # SGNS loss for single sample
         eps = 1e-10
         loss = -np.log(pos_sig + eps) - np.sum(np.log(self.sigmoid(-neg_scores) + eps))
 
+        # gradients
+        # derivative of the loss after pos_score
         grad_pos = pos_sig - 1.0
+        # derivative of the loss after neg_scores
         grad_neg = neg_sig
 
+        # gradient to central embedding
         grad_v = grad_pos * u_pos + np.sum(grad_neg[:, None] * u_neg, axis=0)
+        # gradient to positive context embedding
         grad_u_pos = grad_pos * v
+        # gradient to negatives embeddings
         grad_u_neg = grad_neg[:, None] * v[None, :]
 
-        self.W_in[center_id] -= lr * grad_v
-        self.W_out[pos_id] -= lr * grad_u_pos
-        self.W_out[neg_ids] -= lr * grad_u_neg
+        # embeddings update
+        self.W_in[center_id] -= learning_rate * grad_v
+        self.W_out[pos_id] -= learning_rate * grad_u_pos
+        self.W_out[neg_ids] -= learning_rate * grad_u_neg
 
         return float(loss)
 
     def get_embeddings(self):
         return self.W_in
 
-
 def normalize_rows(matrix):
     norms = np.linalg.norm(matrix, axis=1, keepdims=True) + 1e-10
     return matrix / norms
 
+def nearest_neighbors(query_word, word_to_id, id_to_word, embeddings, top_similarities=5):
+    # finds words the most similar to query word
 
-def nearest_neighbors(query_word, word_to_id, id_to_word, embeddings, top_k=5):
+    # if query word is not in dictionary we can't find similar words 
     if query_word not in word_to_id:
         return []
 
     normalized = normalize_rows(embeddings)
+    # index of query word
     query_id = word_to_id[query_word]
+    # embedding of query word
     query_vector = normalized[query_id]
 
+    # similarity value for each word in the vocabulary 
     similarities = normalized @ query_vector
+    # sorted similarities
     best_ids = np.argsort(-similarities)
 
     results = []
     for idx in best_ids:
+        # ignore query word
         if idx == query_id:
             continue
+
+        # switch id to word, take its simlarity and add it do results[]
         results.append((id_to_word[idx], float(similarities[idx])))
-        if len(results) >= top_k:
+        if len(results) >= top_similarities:
             break
 
     return results
 
-def train(text, embedding_dim=20, window_size=2, num_negatives=3, lr=0.025, epochs=5):
+def train(text, embedding_dim=20, window_size=2, num_negatives=3, learning_rate=0.025, epochs=5):
+    # transform text inot list of words
     tokens = tokenize(text)
+    # build a dictionary and code textr
     word_to_id, id_to_word, encoded, counts = build_vocab(tokens)
 
+    # generate training pairs for skip-gram 
     pairs = generate_pairs(encoded, window_size)
+    # probability distribution
     probs = build_negative_distribution(word_to_id, counts)
 
+    # create a model
     model = Word2Vec(len(word_to_id), embedding_dim)
 
+    # iterate through epochs
     for epoch in range(epochs):
-        np.random.shuffle(pairs)
         total_loss = 0.0
 
+        # for each positive pair draw negatives, count loss and update it
         for center_id, pos_id in pairs:
             neg_ids = sample_negatives(probs, num_negatives, {center_id, pos_id})
-            loss = model.train_step(center_id, pos_id, neg_ids, lr)
+            loss = model.train_step(center_id, pos_id, neg_ids, learning_rate)
             total_loss += loss
 
         avg_loss = total_loss / len(pairs)
@@ -158,13 +188,17 @@ def train(text, embedding_dim=20, window_size=2, num_negatives=3, lr=0.025, epoc
     return model, word_to_id, id_to_word
 
 def main():
+    # read text file
     with open("sample_corpus.txt", "r", encoding="utf-8") as f:
         text = f.read()
 
+    # start training
     model, word_to_id, id_to_word = train(text)
+    # gets embeddings (W_in) 
     embeddings = model.get_embeddings()
 
-    for word in ["cat", "dog", "king", "queen"]:
+    # random words to find its nearest neighbours
+    for word in ["cat", "dog", "king", "queen", "human"]:
         if word in word_to_id:
             print(f"\nNearest neighbors for '{word}':")
             for neighbor, score in nearest_neighbors(word, word_to_id, id_to_word, embeddings):
